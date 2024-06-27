@@ -1,6 +1,4 @@
-import { useRef } from "react";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useRef, useEffect, useState } from "react";
 
 function DataTable() {
   const [formData, setFormData] = useState({ name: "", gender: "", age: "" });
@@ -14,16 +12,21 @@ function DataTable() {
   const lastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = lastItem - itemsPerPage;
 
-  const filteredData = data
-    .filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .slice(indexOfFirstItem, lastItem);
+  // Filtered items based on search term
+  let filteredItems = data.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredData = filteredItems.slice(indexOfFirstItem, lastItem);
+
+  // Reset current page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  // console.log(formData);
 
   const handleAddClick = () => {
     if (formData.name && formData.gender && formData.age) {
@@ -33,20 +36,12 @@ function DataTable() {
         gender: formData.gender,
         age: formData.age,
       };
-      // add new item to the table
       setData([...data, newItem]);
-      // after adding a new item update the fileds to empty
       setFormData({ name: "", gender: "", age: "" });
     }
   };
 
-  //   console.log(data);
-
   const handleDelete = (id) => {
-    if (filteredData.length === 1 && currentPage !== 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
-
     const updateList = data.filter((item) => item.id !== id);
     setData(updateList);
   };
@@ -57,23 +52,9 @@ function DataTable() {
     selectedItem[0].focus();
   }, [editId]);
 
-  const handleEdit = (id, updatedData) => {
-    if (!editId || editId !== id) {
-      return;
-    }
-
-    const updateList = data.map((item) =>
-      item.id === id ? { ...item, ...updatedData } : item
-    );
-    setData(updateList);
-  };
-  //   console.log(data);
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        outsideClick.current &&
-        !outsideClick.current.contains(event.target)
-      ) {
+      if (outsideClick.current && !outsideClick.current.contains(event.target)) {
         setEditId(false);
       }
     };
@@ -97,7 +78,6 @@ function DataTable() {
     <div className="container">
       <div className="add-container">
         <div className="info-container">
-          {/* name input */}
           <input
             type="text"
             name="name"
@@ -105,7 +85,6 @@ function DataTable() {
             value={formData.name}
             onChange={handleInputChange}
           />
-          {/* gender */}
           <input
             type="text"
             name="gender"
@@ -113,7 +92,6 @@ function DataTable() {
             value={formData.gender}
             onChange={handleInputChange}
           />
-          {/* age */}
           <input
             type="number"
             name="age"
@@ -122,17 +100,12 @@ function DataTable() {
             onChange={handleInputChange}
           />
         </div>
-
         <button className="add" onClick={handleAddClick}>
           ADD
         </button>
       </div>
 
-      {/*================= search table ============================== */}
-
       <div className="search-table-container">
-        {/* search input */}
-        {/* gender */}
         <input
           type="text"
           placeholder="Search by name..."
@@ -141,46 +114,36 @@ function DataTable() {
           className="search-input"
         />
 
-        {/*=========================== table ============================ */}
         <table ref={outsideClick}>
-          {/* table header */}
           <thead>
             <tr>
               <th>Name</th>
               <th>Gender</th>
               <th>Age</th>
-              <th>Action</th> {/* edit delete action */}
+              <th>Action</th>
             </tr>
           </thead>
-
-          {/* table body */}
           <tbody>
             {filteredData.map((item) => (
               <tr key={item.id}>
                 <td
                   id={item.id}
                   contentEditable={editId === item.id}
-                  onBlur={(e) =>
-                    handleEdit(item.id, { name: e.target.innerText })
-                  }
+                  onBlur={(e) => handleEdit(item.id, { name: e.target.innerText })}
                 >
                   {item.name}
                 </td>
                 <td
                   id={item.id}
                   contentEditable={editId === item.id}
-                  onBlur={(e) =>
-                    handleEdit(item.id, { gender: e.target.innerText })
-                  }
+                  onBlur={(e) => handleEdit(item.id, { gender: e.target.innerText })}
                 >
-                  {item.gender}{" "}
+                  {item.gender}
                 </td>
                 <td
                   id={item.id}
                   contentEditable={editId === item.id}
-                  onBlur={(e) =>
-                    handleEdit(item.id, { age: e.target.innerText })
-                  }
+                  onBlur={(e) => handleEdit(item.id, { age: e.target.innerText })}
                 >
                   {item.age}
                 </td>
@@ -188,34 +151,28 @@ function DataTable() {
                   <button className="edit" onClick={() => setEditId(item.id)}>
                     Edit
                   </button>
-                  <button
-                    className="delete"
-                    onClick={() => handleDelete(item.id)}
-                  >
+                  <button className="delete" onClick={() => handleDelete(item.id)}>
                     Delete
                   </button>
                 </td>
               </tr>
             ))}
           </tbody>
-          {/* ================== pagination ==================== */}
-          <div className="pagination">
-            {Array.from(
-              { length: Math.ceil(data.length / itemsPerPage) },
-              (_, index) => (
-                <button
-                  key={index + 1}
-                  style={{
-                    backgroundColor: currentPage === index + 1 && "lightgreen",
-                  }}
-                  onClick={() => paginate(index + 1)}
-                >
-                  {index + 1}
-                </button>
-              )
-            )}
-          </div>
         </table>
+
+        <div className="pagination">
+          {Array.from({ length: Math.ceil(filteredItems.length / itemsPerPage) }, (_, index) => (
+            <button
+              key={index + 1}
+              style={{
+                backgroundColor: currentPage === index + 1 && "lightgreen",
+              }}
+              onClick={() => paginate(index + 1)}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
