@@ -1,74 +1,187 @@
+import { useRef } from "react";
+import { useEffect } from "react";
+import { useState } from "react";
+
 function DataTable() {
+  const [formData, setFormData] = useState({ name: "", gender: "", age: "" });
+  const [data, setData] = useState([]);
+  const [editId, setEditId] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("")
+  const outsideClick = useRef(false);
+
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  // console.log(formData);
+
+  const handleAddClick = () => {
+    if (formData.name && formData.gender && formData.age) {
+      const newItem = {
+        id: Date.now(),
+        name: formData.name,
+        gender: formData.gender,
+        age: formData.age,
+      };
+      // add new item to the table
+      setData([...data, newItem]);
+      // after adding a new item update the fileds to empty
+      setFormData({ name: "", gender: "", age: "" });
+    }
+  };
+
+  //   console.log(data);
+
+  const handleDelete = (id) => {
+    const updateList = data.filter((item) => item.id !== id);
+    setData(updateList);
+  };
+
+  useEffect(() => {
+    if (!editId) return;
+    let selectedItem = document.querySelectorAll(`[id="${editId}"]`);
+    selectedItem[0].focus();
+  }, [editId]);
+
+  const handleEdit = (id, updatedData) => {
+    if (!editId || editId !== id) {
+      return;
+    }
+
+    const updateList = data.map((item) =>
+      item.id === id ? { ...item, ...updatedData } : item
+    );
+    setData(updateList);
+  };
+  //   console.log(data);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        outsideClick.current &&
+        !outsideClick.current.contains(event.target)
+      ) {
+        setEditId(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  }
+
   return (
     <div className="container">
       <div className="add-container">
         <div className="info-container">
-            {/* name input */}
+          {/* name input */}
           <input
             type="text"
+            name="name"
             placeholder="Name"
-            // value={""}
-            onChange={() => {}}
+            value={formData.name}
+            onChange={handleInputChange}
           />
           {/* gender */}
           <input
             type="text"
+            name="gender"
             placeholder="Gender"
-            // value={""}
-            onChange={() => {}}
+            value={formData.gender}
+            onChange={handleInputChange}
           />
           {/* age */}
           <input
             type="number"
+            name="age"
             placeholder="Age"
-            // value={""}
-            onChange={() => {}}
+            value={formData.age}
+            onChange={handleInputChange}
           />
         </div>
 
-        <button className="add">ADD</button>
+        <button className="add" onClick={handleAddClick}>
+          ADD
+        </button>
       </div>
 
-      {/* search table */}
+      {/*================= search table ============================== */}
 
       <div className="search-table-container">
         {/* search input */}
-          {/* gender */}
-          <input
-            type="text"
-            placeholder="Search by name..."
-            // value={""}
-            onChange={() => {}}
-            className="search-input"
-          />
+        {/* gender */}
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={handleSearch}
+          className="search-input"
+        />
 
-          {/* table */}
-          <table>
-            {/* table header */}
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Gender</th>
-                    <th>Age</th>
-                    <th>Action</th>  {/* edit delete action */}
-                </tr>
-            </thead>
+        {/*=========================== table ============================ */}
+        <table ref={outsideClick}>
+          {/* table header */}
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Gender</th>
+              <th>Age</th>
+              <th>Action</th> {/* edit delete action */}
+            </tr>
+          </thead>
 
-            {/* table body */}
-            <tbody>
-                <tr>
-                    <td>John</td>
-                    <td>Male</td>
-                    <td>23</td>
-                    <td className="actions">
-                        <button className="edit">Edit</button>
-                        <button className="delete">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
-            {/* pagination */}
-            <div className="pagination"></div>
-          </table>
+          {/* table body */}
+          <tbody>
+            {data.map((item) => (
+              <tr key={item.id}>
+                <td
+                  id={item.id}
+                  contentEditable={editId === item.id}
+                  onBlur={(e) =>
+                    handleEdit(item.id, { name: e.target.innerText })
+                  }
+                >
+                  {item.name}
+                </td>
+                <td
+                  id={item.id}
+                  contentEditable={editId === item.id}
+                  onBlur={(e) =>
+                    handleEdit(item.id, { gender: e.target.innerText })
+                  }
+                >
+                  {item.gender}{" "}
+                </td>
+                <td
+                  id={item.id}
+                  contentEditable={editId === item.id}
+                  onBlur={(e) =>
+                    handleEdit(item.id, { age: e.target.innerText })
+                  }
+                >
+                  {item.age}
+                </td>
+                <td className="actions">
+                  <button className="edit" onClick={() => setEditId(item.id)}>
+                    Edit
+                  </button>
+                  <button
+                    className="delete"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {/* ================== pagination ==================== */}
+          <div className="pagination"></div>
+        </table>
       </div>
     </div>
   );
