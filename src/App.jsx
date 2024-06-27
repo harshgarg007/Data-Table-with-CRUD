@@ -7,6 +7,7 @@ function App() {
 
   return (
     <div className='App'>
+      <h2>Data Table with CRUD Functionality</h2>
       <DataTable/>
     </div>
   )
