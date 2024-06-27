@@ -6,8 +6,19 @@ function DataTable() {
   const [formData, setFormData] = useState({ name: "", gender: "", age: "" });
   const [data, setData] = useState([]);
   const [editId, setEditId] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const outsideClick = useRef(false);
+
+  const itemsPerPage = 5;
+  const lastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = lastItem - itemsPerPage;
+
+  const filteredData = data
+    .filter((item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .slice(indexOfFirstItem, lastItem);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,6 +43,10 @@ function DataTable() {
   //   console.log(data);
 
   const handleDelete = (id) => {
+    if (filteredData.length === 1 && currentPage !== 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+
     const updateList = data.filter((item) => item.id !== id);
     setData(updateList);
   };
@@ -72,7 +87,11 @@ function DataTable() {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-  }
+  };
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   return (
     <div className="container">
@@ -136,7 +155,7 @@ function DataTable() {
 
           {/* table body */}
           <tbody>
-            {data.map((item) => (
+            {filteredData.map((item) => (
               <tr key={item.id}>
                 <td
                   id={item.id}
@@ -180,7 +199,22 @@ function DataTable() {
             ))}
           </tbody>
           {/* ================== pagination ==================== */}
-          <div className="pagination"></div>
+          <div className="pagination">
+            {Array.from(
+              { length: Math.ceil(data.length / itemsPerPage) },
+              (_, index) => (
+                <button
+                  key={index + 1}
+                  style={{
+                    backgroundColor: currentPage === index + 1 && "lightgreen",
+                  }}
+                  onClick={() => paginate(index + 1)}
+                >
+                  {index + 1}
+                </button>
+              )
+            )}
+          </div>
         </table>
       </div>
     </div>
