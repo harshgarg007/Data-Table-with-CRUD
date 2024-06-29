@@ -1,31 +1,33 @@
-import { useRef, useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function DataTable() {
   const [formData, setFormData] = useState({ name: "", gender: "", age: "" });
   const [data, setData] = useState([]);
-  const [editId, setEditId] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editValues, setEditValues] = useState({ name: "", gender: "", age: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const outsideClick = useRef(false);
 
   const itemsPerPage = 5;
   const lastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = lastItem - itemsPerPage;
 
-  // Filtered items based on search term
   let filteredItems = data.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredData = filteredItems.slice(indexOfFirstItem, lastItem);
 
-  // Reset current page when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
   };
 
   const handleAddClick = () => {
@@ -46,32 +48,33 @@ function DataTable() {
     setData(updateList);
   };
 
-  useEffect(() => {
-    if (!editId) return;
-    let selectedItem = document.querySelectorAll(`[id="${editId}"]`);
-    selectedItem[0].focus();
-  }, [editId]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (outsideClick.current && !outsideClick.current.contains(event.target)) {
-        setEditId(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
-
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
+  };
+
+  const handleEditClick = (item) => {
+    setEditId(item.id);
+    setEditValues({ name: item.name, gender: item.gender, age: item.age });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditValues((prevValues) => ({
+      ...prevValues,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveClick = (id) => {
+    const updatedData = data.map((item) =>
+      item.id === id ? { ...item, ...editValues } : item
+    );
+    setData(updatedData);
+    setEditId(null);
   };
 
   return (
@@ -114,7 +117,7 @@ function DataTable() {
           className="search-input"
         />
 
-        <table ref={outsideClick}>
+        <table>
           <thead>
             <tr>
               <th>Name</th>
@@ -126,31 +129,48 @@ function DataTable() {
           <tbody>
             {filteredData.map((item) => (
               <tr key={item.id}>
-                <td
-                  id={item.id}
-                  contentEditable={editId === item.id}
-                  onBlur={(e) => handleEdit(item.id, { name: e.target.innerText })}
-                >
-                  {item.name}
+                <td>
+                  {editId === item.id ? (
+                    <input
+                      type="text"
+                      name="name"
+                      value={editValues.name}
+                      onChange={handleEditChange}
+                    />
+                  ) : (
+                    item.name
+                  )}
                 </td>
-                <td
-                  id={item.id}
-                  contentEditable={editId === item.id}
-                  onBlur={(e) => handleEdit(item.id, { gender: e.target.innerText })}
-                >
-                  {item.gender}
+                <td>
+                  {editId === item.id ? (
+                    <input
+                      type="text"
+                      name="gender"
+                      value={editValues.gender}
+                      onChange={handleEditChange}
+                    />
+                  ) : (
+                    item.gender
+                  )}
                 </td>
-                <td
-                  id={item.id}
-                  contentEditable={editId === item.id}
-                  onBlur={(e) => handleEdit(item.id, { age: e.target.innerText })}
-                >
-                  {item.age}
+                <td>
+                  {editId === item.id ? (
+                    <input
+                      type="number"
+                      name="age"
+                      value={editValues.age}
+                      onChange={handleEditChange}
+                    />
+                  ) : (
+                    item.age
+                  )}
                 </td>
                 <td className="actions">
-                  <button className="edit" onClick={() => setEditId(item.id)}>
-                    Edit
-                  </button>
+                  {editId === item.id ? (
+                    <button onClick={() => handleSaveClick(item.id)}>Save</button>
+                  ) : (
+                    <button onClick={() => handleEditClick(item)}>Edit</button>
+                  )}
                   <button className="delete" onClick={() => handleDelete(item.id)}>
                     Delete
                   </button>
